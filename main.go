@@ -80,13 +80,15 @@ type Item struct {
 	Password2   string    `json:"password2"`
 	Spreadsheet string    `json:"spreadsheet"`
 	Actions     []*Action `json:"actions"`
+	SaveStatus  string    `json:"save_status"`
 	acc         Account
 	status      ItemStatus
 }
 
 type ItemStatus struct {
-	Balance       int64                `json:"balance"`
-	LastExecution map[string]time.Time `json:"last_exec"`
+	Balance        int64                `json:"balance"`
+	LastSuccessful time.Time            `json:"last_successful"`
+	LastExecution  map[string]time.Time `json:"last_event_exec"`
 }
 
 type Config struct {
@@ -145,8 +147,10 @@ func ensureLogin(item *Item) error {
 	item.acc = acc
 	// load status
 	item.status.LastExecution = map[string]time.Time{}
-	if bytes, err := ioutil.ReadFile("status_" + item.Name + ".json"); err == nil {
-		_ = json.Unmarshal(bytes, &item.status)
+	if item.SaveStatus != "" {
+		if bytes, err := ioutil.ReadFile(item.SaveStatus); err == nil {
+			_ = json.Unmarshal(bytes, &item.status)
+		}
 	}
 	item.status.Balance, _ = acc.TotalBalance()
 	return nil
@@ -157,8 +161,10 @@ func ensureLogout(item *Item) error {
 		return nil
 	}
 	// save
-	if bytes, err := json.Marshal(&item.status); err == nil {
-		_ = ioutil.WriteFile("status_"+item.Name+".json", bytes, 0)
+	if item.SaveStatus != "" {
+		if bytes, err := json.Marshal(&item.status); err == nil {
+			_ = ioutil.WriteFile(item.SaveStatus, bytes, 0644)
+		}
 	}
 	err := item.acc.Logout()
 	item.acc = nil
@@ -181,7 +187,7 @@ func main() {
 	if config.GoogleCredential != "" {
 		sss, err = NewService(config.GoogleCredential)
 		if err != nil {
-			fmt.Println("NewService() error:", err)
+			log.Println("NewService() error:", err)
 		}
 	}
 
@@ -193,10 +199,11 @@ func main() {
 		// login
 		err := ensureLogin(item)
 		if err != nil {
-			fmt.Println("login error:", item.Name, err)
+			log.Println("login error:", item.Name, err)
 			continue
 		}
 		defer ensureLogout(item)
+		log.Println("balance:", item.Name, item.status.Balance)
 
 		var lastError error
 
@@ -270,16 +277,7 @@ func main() {
 
 			// Last Row
 			last, _ := s.Read(fmt.Sprintf("A%d:E%d", s.RowCount(), s.RowCount()))
-			if len(last) > 0 && len(last[0]) >= 5 {
-				row := last[0]
-				for i, t := range recent {
-					if row[0].(string) == t.Date.Format(timeFormat) && row[4].(string) == fmt.Sprint(t.Balance) {
-						// log.Println("match last", t)
-						recent = recent[i+1:]
-						break
-					}
-				}
-			}
+
 			var values [][]interface{}
 			for _, t := range recent {
 				log.Println(t.Date, t.Amount, t.Balance, t.Description)
@@ -289,7 +287,17 @@ func main() {
 				} else {
 					in = fmt.Sprint(t.Amount)
 				}
-				values = append(values, []interface{}{t.Date.Format(timeFormat), in, out, t.Description, t.Balance})
+				row := []interface{}{t.Date.Format(timeFormat), in, out, t.Description, fmt.Sprint(t.Balance)}
+				values = append(values, row)
+
+				if len(last) > 0 && len(last[0]) >= 5 {
+					lastRow := last[0]
+					if row[0].(string) == lastRow[0].(string) && lastRow[1].(string) == in &&
+						lastRow[2].(string) == out && row[4].(string) == lastRow[4].(string) {
+						// match last
+						values = values[:0]
+					}
+				}
 			}
 			if len(values) > 0 {
 				err = s.Append(values)
@@ -297,6 +305,9 @@ func main() {
 					fmt.Println("Update error:", err)
 				}
 			}
+		}
+		if lastError == nil {
+			item.status.LastSuccessful = time.Now()
 		}
 	}
 }
