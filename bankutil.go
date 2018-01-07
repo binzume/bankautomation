@@ -53,7 +53,7 @@ func login(path string) (common.Account, error) {
 	case "sbi":
 		return sbi.Login(c.Id, c.Password)
 	case "stub":
-		return stub.Login(c.Id, c.Password)
+		return stub.Login(c.Id, c.Password, c.Options)
 	default:
 		return nil, errors.New("unknown:" + c.Bank)
 	}

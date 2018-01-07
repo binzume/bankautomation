@@ -175,10 +175,12 @@ func main() {
 	}
 	config = c
 
-	sss, err := NewService(config.GoogleCredential)
-	if err != nil {
-		fmt.Println("NewService() error:", err)
-		return
+	var sss *Service
+	if config.GoogleCredential != "" {
+		sss, err = NewService(config.GoogleCredential)
+		if err != nil {
+			fmt.Println("NewService() error:", err)
+		}
 	}
 
 	target := os.Args[1]
@@ -253,7 +255,7 @@ func main() {
 
 		// spreadsheet
 		sheetAndName := strings.Split(item.Spreadsheet, ":")
-		if len(sheetAndName) == 2 {
+		if len(sheetAndName) == 2 && sss != nil {
 			ss, err := sss.Spreadsheet(sheetAndName[0])
 			if err != nil {
 				fmt.Println("Spreadsheet() error:", err)
