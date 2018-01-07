@@ -5,12 +5,12 @@ import (
 	"errors"
 	"io/ioutil"
 
-	"github.com/binzume/go-banking/common"
-	"github.com/binzume/go-banking/mizuho"
-	"github.com/binzume/go-banking/rakuten"
-	"github.com/binzume/go-banking/sbi"
-	"github.com/binzume/go-banking/shinsei"
-	"github.com/binzume/go-banking/stub"
+	"github.com/binzume/gobanking/common"
+	"github.com/binzume/gobanking/mizuho"
+	"github.com/binzume/gobanking/rakuten"
+	"github.com/binzume/gobanking/sbi"
+	"github.com/binzume/gobanking/shinsei"
+	"github.com/binzume/gobanking/stub"
 )
 
 type AccountConfig struct {
@@ -19,6 +19,8 @@ type AccountConfig struct {
 	Password string                 `json:"password"`
 	Options  map[string]interface{} `json:"options"`
 }
+
+type Account common.Account
 
 func login(path string) (common.Account, error) {
 	raw, err := ioutil.ReadFile(path)

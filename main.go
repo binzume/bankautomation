@@ -2,14 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"strings"
 	"time"
-
-	"github.com/binzume/go-banking/common"
 )
 
 const timeFormat = "2006-01-02"
@@ -82,7 +80,7 @@ type Item struct {
 	Password2   string    `json:"password2"`
 	Spreadsheet string    `json:"spreadsheet"`
 	Actions     []*Action `json:"actions"`
-	acc         common.Account
+	acc         Account
 	status      ItemStatus
 }
 
@@ -168,12 +166,16 @@ func ensureLogout(item *Item) error {
 }
 
 func main() {
-	c, err := load("config.json")
+	configPath := flag.String("c", "config.json", "config.json path")
+	flag.Parse()
+
+	c, err := load(*configPath)
 	if err != nil {
 		fmt.Println("Login error.", err)
 		return
 	}
 	config = c
+	target := flag.Arg(0)
 
 	var sss *Service
 	if config.GoogleCredential != "" {
@@ -183,7 +185,6 @@ func main() {
 		}
 	}
 
-	target := os.Args[1]
 	for _, item := range config.Items {
 		if target != "" && item.Name != target {
 			continue
