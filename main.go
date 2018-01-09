@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const timeFormat = "2006-01-02"
+const timeFormat = "2006/01/02"
 
 type TransAction struct {
 	Target string `json:"target"`
@@ -177,7 +177,7 @@ func main() {
 
 	c, err := load(*configPath)
 	if err != nil {
-		fmt.Println("Login error.", err)
+		log.Println("Login error.", err)
 		return
 	}
 	config = c
@@ -221,7 +221,7 @@ func main() {
 						if item.Name == act.BalanceItem {
 							err := ensureLogin(item2)
 							if err != nil {
-								fmt.Println("login error:", item.Name, err)
+								log.Println("login error:", item.Name, err)
 								lastError = err
 								break
 							}
@@ -253,7 +253,7 @@ func main() {
 				item.status.LastExecution[actStr] = time.Now()
 				err := act.Execute(item)
 				if err != nil {
-					fmt.Println("Execute() error:", err, act)
+					log.Println("Execute() error:", err, act)
 					lastError = err
 				}
 			}
@@ -266,12 +266,12 @@ func main() {
 		if len(sheetAndName) == 2 && sss != nil {
 			ss, err := sss.Spreadsheet(sheetAndName[0])
 			if err != nil {
-				fmt.Println("Spreadsheet() error:", err)
+				log.Println("Spreadsheet() error:", err)
 				return
 			}
 			s, err := ss.EnsureSheetByName(sheetAndName[1])
 			if err != nil {
-				fmt.Println("SheetByName() error:", err)
+				log.Println("SheetByName() error:", err)
 				return
 			}
 
@@ -287,22 +287,23 @@ func main() {
 				} else {
 					in = fmt.Sprint(t.Amount)
 				}
-				row := []interface{}{t.Date.Format(timeFormat), in, out, t.Description, fmt.Sprint(t.Balance)}
+				row := []interface{}{t.Date.Format(timeFormat), out, in, t.Description, fmt.Sprint(t.Balance)}
 				values = append(values, row)
 
 				if len(last) > 0 && len(last[0]) >= 5 {
 					lastRow := last[0]
-					if row[0].(string) == lastRow[0].(string) && lastRow[1].(string) == in &&
-						lastRow[2].(string) == out && row[4].(string) == lastRow[4].(string) {
+					if row[0].(string) == lastRow[0].(string) && lastRow[1].(string) == out &&
+						lastRow[2].(string) == in && row[4].(string) == lastRow[4].(string) {
 						// match last
 						values = values[:0]
+						log.Println("--------")
 					}
 				}
 			}
 			if len(values) > 0 {
 				err = s.Append(values)
 				if err != nil {
-					fmt.Println("Update error:", err)
+					log.Println("Update error:", err)
 				}
 			}
 		}
