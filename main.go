@@ -8,6 +8,9 @@ import (
 	"log"
 	"strings"
 	"time"
+
+	"github.com/binzume/gobanking"
+	"github.com/binzume/gobanking/common"
 )
 
 const timeFormat = "2006/01/02"
@@ -32,12 +35,12 @@ func (a *TransAction) Execute(item *Item) error {
 	}
 	if amount > 0 {
 		log.Println("Start transfer", amount)
-		tr, err := acc.NewTransactionWithNick(a.Target, amount)
+		tr, err := acc.NewTransferToRegisteredAccount(a.Target, amount)
 		if err != nil {
 			return nil
 		}
 		log.Println("Execute transfer", tr)
-		recpt, err := acc.CommitTransaction(tr, item.Password2)
+		recpt, err := acc.CommitTransfer(tr, item.Password2)
 		log.Println("Finish transfer ReceptId:", recpt, err)
 	}
 	return nil
@@ -81,7 +84,7 @@ type Item struct {
 	Spreadsheet string    `json:"spreadsheet"`
 	Actions     []*Action `json:"actions"`
 	SaveStatus  string    `json:"save_status"`
-	acc         Account
+	acc         common.Account
 	status      ItemStatus
 }
 
@@ -140,7 +143,7 @@ func ensureLogin(item *Item) error {
 		return nil
 	}
 	// login
-	acc, err := login(item.Login)
+	acc, err := banking.LoginWithJsonFile(item.Login)
 	if err != nil {
 		return err
 	}
