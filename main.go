@@ -176,6 +176,7 @@ func ensureLogout(item *Item) error {
 
 func main() {
 	configPath := flag.String("c", "config.json", "config.json path")
+	dryRun := flag.Bool("d", false, "dry run")
 	flag.Parse()
 
 	c, err := load(*configPath)
@@ -207,6 +208,9 @@ func main() {
 		}
 		defer ensureLogout(item)
 		log.Println("balance:", item.Name, item.status.Balance)
+		if *dryRun {
+			continue
+		}
 
 		var lastError error
 

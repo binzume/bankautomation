@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/binzume/go-banking/common"
+	"github.com/binzume/gobanking/utils"
 )
 
 func SendSlackMessage(url, text string) error {
@@ -13,7 +13,7 @@ func SendSlackMessage(url, text string) error {
 		Text string `json:"text"`
 	}{text}
 	b, err := json.Marshal(data)
-	client, _ := common.NewHttpClient()
+	client, _ := utils.NewHttpClient()
 
 	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
 	if err != nil {
